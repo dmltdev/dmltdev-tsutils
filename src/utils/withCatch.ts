@@ -1,12 +1,22 @@
 /**
- * Wraps a promise in a try/catch block and returns the result as a tuple.
+ * Wraps a promise execution in a tuple result pattern, ensuring type-safe error handling.
  *
- * @param promise - The promise to wrap.
- * @returns A tuple containing the result of the promise or an error if it fails.
+ * @param promise - The promise to be executed
+ * @returns A tuple where:
+ *          - On success: [undefined, T] where T is the promise result
+ *          - On error: [Error, undefined] with a normalized Error instance
+ *
+ * @example
+ * const [error, data] = await withCatch(fetchUser(123));
+ * if (error) {
+ *   console.error('Failed to fetch user:', error);
+ *   return;
+ * }
+ * console.log('User data:', data);
  */
 export async function withCatch<T>(
   promise: Promise<T>
-): Promise<[undefined, T] | [Error | unknown, undefined]> {
+): Promise<[undefined, T] | [Error, undefined]> {
   try {
     const data = await promise;
 
@@ -16,6 +26,13 @@ export async function withCatch<T>(
       return [error, undefined] as [Error, undefined];
     }
 
-    return [error, undefined] as [unknown, undefined];
+    if (error === null || error === undefined) {
+      return [new Error(`Unknown error: ${error}`), undefined] as [
+        Error,
+        undefined
+      ];
+    }
+
+    return [new Error(String(error)), undefined] as [Error, undefined];
   }
 }
